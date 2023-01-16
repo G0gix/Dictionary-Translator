@@ -1,6 +1,9 @@
 ﻿using CoreLibrary.Logger;
 using Dictionary_Translator.Models;
 using Dictionary_Translator.Secrets;
+using GoogleAPI_Library;
+using GoogleAPI_Library.Exceptions;
+using GoogleAPI_Library.Models;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -32,7 +35,9 @@ namespace Dictionary_Translator.Controllers
                 Logger.Log(LogLevel.Info, $"--- Request received. Id: {requestId} ---");
 
                 #region GoogleSheetsManager creation
+                GoogleCredentialOptions_FilePath credentials = SecretsManager.GetGoogleCredentialOptions();
 
+                GoogleSheetsManager googleSheetsManager = new GoogleSheetsManager(credentials);
                 #endregion
 
                 if (String.IsNullOrEmpty(valueToTranslate))
@@ -69,13 +74,18 @@ namespace Dictionary_Translator.Controllers
                     return BadRequest();
                 }
 
+
+
                 Logger.Log(LogLevel.Info, $"{requestId}. Json converted to Model");
-
-
+            }
+            catch (GoogleSheetsException googleEx)
+            {
+                Logger.Log(LogLevel.Fatal, $"--- Request {requestId} finished. Google Sheets Error: {googleEx.Message} ---");
+                return BadRequest();
             }
             catch (Exception ex)
             {
-                Logger.Log(LogLevel.Fatal, $"------------ Request {requestId} finished. Error message: {ex.Message} ---------------");
+                Logger.Log(LogLevel.Fatal, $"--- Request {requestId} finished. Error message: {ex.Message} ---");
                 return BadRequest();
             }
 
