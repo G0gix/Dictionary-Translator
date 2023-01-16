@@ -14,7 +14,7 @@ namespace Dictionary_Translator.Controllers
     [Route("[controller]")]
     public class TranslateConstroller : Controller
     {
-        static ILogger Logger;
+        readonly ILogger Logger;
 
         public TranslateConstroller()
         {
@@ -29,11 +29,15 @@ namespace Dictionary_Translator.Controllers
             
             try
             {
-                Logger.Log(LogLevel.Info, $"Request received. Id: {requestId}");
+                Logger.Log(LogLevel.Info, $"--- Request received. Id: {requestId} ---");
+
+                #region GoogleSheetsManager creation
+
+                #endregion
 
                 if (String.IsNullOrEmpty(valueToTranslate))
                 {
-                    Logger.Log(LogLevel.Info, $"Request {requestId} finished. Input parametr is null or empty");
+                    Logger.Log(LogLevel.Info, $"--- Request {requestId} finished. Input parametr is null or empty ---");
                     return BadRequest();
                 }
 
@@ -47,25 +51,31 @@ namespace Dictionary_Translator.Controllers
                 var responseFromServer = await httpClient.SendAsync(requestToTranslate);
                 string translatedTextJSON = responseFromServer.Content.ReadAsStringAsync().Result;
 
+                Logger.Log(LogLevel.Info, $"{requestId} Request sended");
+
                 if (string.IsNullOrEmpty(translatedTextJSON))
                 {
-                    Logger.Log(LogLevel.Error, $"Request {requestId} finished. Response from Translate server Is Null Or Empty");
+                    Logger.Log(LogLevel.Error, $"--- Request {requestId} finished. Response from Translate server Is Null Or Empty ---");
                     //TODO google sheets
                     return BadRequest();
                 }
 
                 Root translatedText = JsonConvert.DeserializeObject<Root>(JObject.Parse(translatedTextJSON).ToString());
 
-                if (translatedText is null)
+                if (translatedText is null || translatedText.def.Count == 0)
                 {
                     //TODO Google Sheets
-                    Logger.Log(LogLevel.Error, $"Request {requestId} finished. Response from Translate server Is Null Or Empty");
+                    Logger.Log(LogLevel.Error, $"--- Request {requestId} finished. Response from Translate server Is Null Or Empty ---");
                     return BadRequest();
                 }
+
+                Logger.Log(LogLevel.Info, $"{requestId}. Json converted to Model");
+
+
             }
             catch (Exception ex)
             {
-                Logger.Log(LogLevel.Fatal, $"Request {requestId} finished. Error message: {ex.Message}");
+                Logger.Log(LogLevel.Fatal, $"------------ Request {requestId} finished. Error message: {ex.Message} ---------------");
                 return BadRequest();
             }
 
