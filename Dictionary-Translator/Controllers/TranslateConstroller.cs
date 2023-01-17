@@ -29,7 +29,7 @@ namespace Dictionary_Translator.Controllers
 
         [HttpPost]
         [Route("translate")]
-        public async Task<IActionResult> Translate([FromForm] string valueToTranslate)
+        public async Task<IActionResult> Translate([FromForm] string valueToTranslate, [FromForm] string rowIndex)
         {
             Guid requestId = Guid.NewGuid();
             
@@ -43,6 +43,7 @@ namespace Dictionary_Translator.Controllers
                 GoogleCredentialOptions_FilePath credentials = SecretsManager.GetGoogleCredentialOptions();
 
                 GoogleSheetsManager googleSheetsManager = new GoogleSheetsManager(credentials);
+                GoogleSheetOptions sheetOptions = SecretsManager.GetGoogleSheetOptions(rowIndex);
                 #endregion
 
                 if (String.IsNullOrEmpty(valueToTranslate))
