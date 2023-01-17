@@ -83,7 +83,14 @@ namespace Dictionary_Translator.Controllers
                     return BadRequest();
                 }
 
+                string translateTextToInsert = String.Empty;
+                string translatedTextTranscription = translatedTextModel.def[0].ts ?? "null";
 
+                List<string> translatedList =  Translation.GetTranslationsString(translatedTextModel).Take(3).ToList();
+                string translatedText = Translation.GetTranslatedStringFromCollection(translatedList);
+                
+                var resultList = new List<IList<object>> { new object[] { translatedText, translatedTextTranscription } };
+                await googleSheetsManager.Write(sheetOptions, resultList);
 
                 Logger.Log(LogLevel.Info, $"{requestId} | Data inserted to Google Sheet");
             }
