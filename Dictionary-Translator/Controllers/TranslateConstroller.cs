@@ -1,6 +1,7 @@
 ﻿using CoreLibrary.Logger;
 using Dictionary_Translator.Models;
 using Dictionary_Translator.Secrets;
+using Dictionary_Translator.Services.Translation;
 using GoogleAPI_Library;
 using GoogleAPI_Library.Exceptions;
 using GoogleAPI_Library.Models;
@@ -8,6 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -21,7 +24,7 @@ namespace Dictionary_Translator.Controllers
 
         public TranslateConstroller()
         {
-            Logger = new LogToFile(Environment.CurrentDirectory + "\\Logging\\log.txt");
+            Logger = new LogToFile(Environment.CurrentDirectory + "\\Logging\\log.log");
         }
 
         [HttpPost]
@@ -32,7 +35,9 @@ namespace Dictionary_Translator.Controllers
             
             try
             {
-                Logger.Log(LogLevel.Info, $"--- Request received. Id: {requestId} ---");
+                Logger.Log(LogLevel.Info, $"----------------- Request received. Id: {requestId} -------------------\nInput Data:" +
+                    $"\nvalueToTranslate: {valueToTranslate}" +
+                    $"\nrowIndex: {rowIndex}");
 
                 #region GoogleSheetsManager creation
                 GoogleCredentialOptions_FilePath credentials = SecretsManager.GetGoogleCredentialOptions();
@@ -42,7 +47,7 @@ namespace Dictionary_Translator.Controllers
 
                 if (String.IsNullOrEmpty(valueToTranslate))
                 {
-                    Logger.Log(LogLevel.Info, $"--- Request {requestId} finished. Input parametr is null or empty ---");
+                    Logger.Log(LogLevel.Info, $"--- Request {requestId} finished. Input parametr is null or empty ---\n\n");
                     return BadRequest();
                 }
 
@@ -56,40 +61,42 @@ namespace Dictionary_Translator.Controllers
                 var responseFromServer = await httpClient.SendAsync(requestToTranslate);
                 string translatedTextJSON = responseFromServer.Content.ReadAsStringAsync().Result;
 
-                Logger.Log(LogLevel.Info, $"{requestId} Request sended");
+                Logger.Log(LogLevel.Info, $"{requestId} | Translation request sended");
 
                 if (string.IsNullOrEmpty(translatedTextJSON))
                 {
-                    Logger.Log(LogLevel.Error, $"--- Request {requestId} finished. Response from Translate server Is Null Or Empty ---");
                     //TODO google sheets
+                    Logger.Log(LogLevel.Error, $"--- Request {requestId} finished. Response from Translate server Is Null Or Empty ---\n\n");
+                    
                     return BadRequest();
                 }
 
                 Root translatedText = JsonConvert.DeserializeObject<Root>(JObject.Parse(translatedTextJSON).ToString());
+                Logger.Log(LogLevel.Info, $"{requestId} | Json converted to Model");
 
                 if (translatedText is null || translatedText.def.Count == 0)
                 {
-                    //TODO Google Sheets
-                    Logger.Log(LogLevel.Error, $"--- Request {requestId} finished. Response from Translate server Is Null Or Empty ---");
+                    Logger.Log(LogLevel.Error, $"--- Request {requestId} finished. Response from Translate server Is Null Or Empty ---\n\n");
+                    await googleSheetsManager.Write(sheetOptions, googleSheetsNotTranslatedText);
                     return BadRequest();
                 }
 
 
 
-                Logger.Log(LogLevel.Info, $"{requestId}. Json converted to Model");
+                Logger.Log(LogLevel.Info, $"{requestId} | Data inserted to Google Sheet");
             }
             catch (GoogleSheetsException googleEx)
             {
-                Logger.Log(LogLevel.Fatal, $"--- Request {requestId} finished. Google Sheets Error: {googleEx.Message} ---");
+                Logger.Log(LogLevel.Fatal, $"--- Request {requestId} finished. Google Sheets Error: {googleEx.Message} ---\n\n");
                 return BadRequest();
             }
             catch (Exception ex)
             {
-                Logger.Log(LogLevel.Fatal, $"--- Request {requestId} finished. Error message: {ex.Message} ---");
+                Logger.Log(LogLevel.Fatal, $"--- Request {requestId} finished. Error message: {ex.Message} ---\n\n");
                 return BadRequest();
             }
 
-
+            Logger.Log(LogLevel.Info, $"-------------Request successfully {requestId} finished------------------\n\n");
             return Ok();
         }
     }
