@@ -32,7 +32,8 @@ namespace Dictionary_Translator.Controllers
         public async Task<IActionResult> Translate([FromForm] string valueToTranslate, [FromForm] string rowIndex)
         {
             Guid requestId = Guid.NewGuid();
-            
+            var googleSheetsNotTranslatedText = new List<IList<object>> { new object[] { "None", "None" } };
+
             try
             {
                 Logger.Log(LogLevel.Info, $"----------------- Request received. Id: {requestId} -------------------\nInput Data:" +
@@ -66,9 +67,9 @@ namespace Dictionary_Translator.Controllers
 
                 if (string.IsNullOrEmpty(translatedTextJSON))
                 {
-                    //TODO google sheets
                     Logger.Log(LogLevel.Error, $"--- Request {requestId} finished. Response from Translate server Is Null Or Empty ---\n\n");
                     
+                    await googleSheetsManager.Write(sheetOptions, googleSheetsNotTranslatedText);
                     return BadRequest();
                 }
 
