@@ -47,15 +47,15 @@ namespace Dictionary_Translator.Controllers
                 GoogleSheetOptions sheetOptions = SecretsManager.GetGoogleSheetOptions(rowIndex);
                 #endregion
 
-                if (String.IsNullOrEmpty(valueToTranslate))
+                if (String.IsNullOrEmpty(valueToTranslate) || String.IsNullOrEmpty(rowIndex))
                 {
                     Logger.Log(LogLevel.Info, $"--- Request {requestId} finished. Input parametr is null or empty ---\n\n");
                     return BadRequest();
                 }
 
-                string privateKey = SecretsManager.GetYandexAPIKey();
+                string translationAPI_PrivateKey = SecretsManager.GetYandexAPIKey();
 
-                string url = @$"https://dictionary.yandex.net/api/v1/dicservice.json/lookup?key={privateKey}&lang=en-ru&text={valueToTranslate}";
+                string url = @$"https://dictionary.yandex.net/api/v1/dicservice.json/lookup?key={translationAPI_PrivateKey}&lang=en-ru&text={valueToTranslate}";
 
                 using HttpClient httpClient = new HttpClient();
                 using HttpRequestMessage requestToTranslate = new HttpRequestMessage(HttpMethod.Get, url);
@@ -73,10 +73,10 @@ namespace Dictionary_Translator.Controllers
                     return BadRequest();
                 }
 
-                Root translatedText = JsonConvert.DeserializeObject<Root>(JObject.Parse(translatedTextJSON).ToString());
+                Root translatedTextModel = JsonConvert.DeserializeObject<Root>(JObject.Parse(translatedTextJSON).ToString());
                 Logger.Log(LogLevel.Info, $"{requestId} | Json converted to Model");
 
-                if (translatedText is null || translatedText.def.Count == 0)
+                if (translatedTextModel is null || translatedTextModel.def.Count == 0)
                 {
                     Logger.Log(LogLevel.Error, $"--- Request {requestId} finished. Response from Translate server Is Null Or Empty ---\n\n");
                     await googleSheetsManager.Write(sheetOptions, googleSheetsNotTranslatedText);
