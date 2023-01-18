@@ -10,6 +10,10 @@ async function onChange() {
         return;
     }
 
+    if (row == 1) {
+        return;
+    }
+
     if (value === null || value === undefined || value === "" || value === " ") {
         return;
     }
