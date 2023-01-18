@@ -37,6 +37,7 @@ namespace Dictionary_Translator.Controllers
             //Replacing because from google sheet data comes with .0 Example 23.0
             rowIndex = rowIndex.Replace(".0", "");
             string pronunciationTextUrl = $"=HYPERLINK(\"https://www.google.com/search?q=google+pronunciation\" & \" \" &A{rowIndex})";
+            string sentenceExamplesUrl = $"=HYPERLINK(\"https://context.reverso.net/translation/english-russian/\" & \" \" &A{rowIndex})";
 
             try
             {
@@ -93,7 +94,7 @@ namespace Dictionary_Translator.Controllers
                 List<string> translatedList =  Translation.GetTranslationsString(translatedTextModel).Take(3).ToList();
                 string translatedText = Translation.GetTranslatedStringFromCollection(translatedList);
                 
-                var resultList = new List<IList<object>> { new object[] { translatedText, translatedTextTranscription, pronunciationTextUrl } };
+                var resultList = new List<IList<object>> { new object[] { translatedText, translatedTextTranscription, pronunciationTextUrl, sentenceExamplesUrl } };
                 await googleSheetsManager.Write(sheetOptions, resultList);
 
                 Logger.Log(LogLevel.Info, $"{requestId} | Data inserted to Google Sheet");
