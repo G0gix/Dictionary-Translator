@@ -1,6 +1,7 @@
 ﻿using CoreLibrary.Logger;
 using Dictionary_Translator.Models;
 using Dictionary_Translator.Secrets;
+using Dictionary_Translator.Services.AppSettingsManager;
 using Dictionary_Translator.Services.Translation;
 using GoogleAPI_Library;
 using GoogleAPI_Library.Exceptions;
@@ -41,10 +42,10 @@ namespace Dictionary_Translator.Controllers
                     $"\nrowIndex: {rowIndex}");
 
                 #region GoogleSheetsManager creation
-                GoogleCredentialOptions_FilePath credentials = SecretsManager.GetGoogleCredentialOptions();
+                var credentials = AppSettingsManager.GetGoogleSheetsSetting(rowIndex.Replace(".0", ""));
 
-                GoogleSheetsManager googleSheetsManager = new GoogleSheetsManager(credentials);
-                GoogleSheetOptions sheetOptions = SecretsManager.GetGoogleSheetOptions(rowIndex);
+                GoogleSheetsManager googleSheetsManager = new GoogleSheetsManager(credentials.Item1);
+                GoogleSheetOptions sheetOptions = credentials.Item2;
                 #endregion
 
                 if (String.IsNullOrEmpty(valueToTranslate) || String.IsNullOrEmpty(rowIndex))
@@ -53,7 +54,7 @@ namespace Dictionary_Translator.Controllers
                     return BadRequest();
                 }
 
-                string translationAPI_PrivateKey = SecretsManager.GetYandexAPIKey();
+                string translationAPI_PrivateKey = AppSettingsManager.GetValueFromSection("YandexTranslateApiKey");
 
                 string url = @$"https://dictionary.yandex.net/api/v1/dicservice.json/lookup?key={translationAPI_PrivateKey}&lang=en-ru&text={valueToTranslate}";
 
