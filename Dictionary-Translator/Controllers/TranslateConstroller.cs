@@ -1,6 +1,5 @@
 ﻿using CoreLibrary.Logger;
 using Dictionary_Translator.Models;
-using Dictionary_Translator.Secrets;
 using Dictionary_Translator.Services.AppSettingsManager;
 using Dictionary_Translator.Services.Translation;
 using GoogleAPI_Library;
@@ -35,6 +34,10 @@ namespace Dictionary_Translator.Controllers
             Guid requestId = Guid.NewGuid();
             var googleSheetsNotTranslatedText = new List<IList<object>> { new object[] { "None", "None" } };
 
+            //Replacing because from google sheet data comes with .0 Example 23.0
+            rowIndex = rowIndex.Replace(".0", "");
+            string pronunciationTextUrl = $"=HYPERLINK(\"https://www.google.com/search?q=google+pronunciation\" & \" \" &A{rowIndex})";
+
             try
             {
                 Logger.Log(LogLevel.Info, $"----------------- Request received. Id: {requestId} -------------------\nInput Data:" +
@@ -42,7 +45,7 @@ namespace Dictionary_Translator.Controllers
                     $"\nrowIndex: {rowIndex}");
 
                 #region GoogleSheetsManager creation
-                var credentials = AppSettingsManager.GetGoogleSheetsSetting(rowIndex.Replace(".0", ""));
+                var credentials = AppSettingsManager.GetGoogleSheetsSetting(rowIndex);
 
                 GoogleSheetsManager googleSheetsManager = new GoogleSheetsManager(credentials.Item1);
                 GoogleSheetOptions sheetOptions = credentials.Item2;
@@ -90,7 +93,7 @@ namespace Dictionary_Translator.Controllers
                 List<string> translatedList =  Translation.GetTranslationsString(translatedTextModel).Take(3).ToList();
                 string translatedText = Translation.GetTranslatedStringFromCollection(translatedList);
                 
-                var resultList = new List<IList<object>> { new object[] { translatedText, translatedTextTranscription } };
+                var resultList = new List<IList<object>> { new object[] { translatedText, translatedTextTranscription, pronunciationTextUrl } };
                 await googleSheetsManager.Write(sheetOptions, resultList);
 
                 Logger.Log(LogLevel.Info, $"{requestId} | Data inserted to Google Sheet");
